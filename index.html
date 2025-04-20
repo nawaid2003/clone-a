@@ -282,59 +282,6 @@
         height: 12px;
         border: 2px solid #fff;
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-        animation: pulse 2s infinite;
-      }
-
-      @keyframes pulse {
-        0% {
-          transform: scale(1);
-        }
-        50% {
-          transform: scale(1.2);
-        }
-        100% {
-          transform: scale(1);
-        }
-      }
-
-      .itinerary {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        width: 300px;
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        padding: 15px;
-        z-index: 1000;
-        max-height: 500px;
-        overflow-y: auto;
-      }
-
-      .itinerary h3 {
-        font-size: 18px;
-        margin-bottom: 10px;
-      }
-
-      .itinerary-item {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-        margin-bottom: 10px;
-      }
-
-      .itinerary-item button {
-        background: #ff385c;
-        color: #fff;
-        border: none;
-        border-radius: 20px;
-        padding: 4px 8px;
-        font-size: 12px;
-        cursor: pointer;
-        transition: background 0.3s ease;
-      }
-
-      .itinerary-item button:hover {
-        background: #e6003a;
       }
 
       /* Footer */
@@ -426,12 +373,6 @@
 
         #map {
           height: 400px;
-        }
-
-        .itinerary {
-          width: 90%;
-          right: 5%;
-          top: 10px;
         }
 
         .footer-columns {
@@ -571,17 +512,11 @@
     <!-- Map Section -->
     <section class="map-section">
       <div class="container">
-        <h2>Interactive Experience Planner</h2>
+        <h2>Explore Destinations</h2>
         <div class="map-controls">
-          <button id="toggle-trend">Toggle Price Trends</button>
-          <button id="filter-price">Filter by Price</button>
-          <button id="filter-type">Filter by Experience</button>
+          <button id="toggle-heatmap">Toggle Heatmap</button>
         </div>
         <div id="map"></div>
-        <div class="itinerary">
-          <h3>Your Itinerary</h3>
-          <div id="itinerary-list"></div>
-        </div>
       </div>
     </section>
 
@@ -665,7 +600,7 @@
       });
 
       // Initialize Leaflet Map
-      const map = L.map("map").setView([15.2993, 74.124], 6);
+      const map = L.map("map").setView([15.2993, 74.124], 6); // Centered on India
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
           '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -673,198 +608,75 @@
 
       const customIcon = L.divIcon({
         className: "custom-marker",
-        html: '<div style="background: #ff385c; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2); animation: pulse 2s infinite;"></div>',
+        html: '<div style="background: #ff385c; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2);"></div>',
         iconSize: [12, 12],
         iconAnchor: [6, 6],
       });
 
       const neighborhoods = [
-        {
-          name: "Mandrem",
-          coords: [15.8197, 73.6449],
-          basePrice: 31377,
-          minPrice: 28000,
-          maxPrice: 35000,
-          listings: 50,
-          type: "Beachfront",
-        },
-        {
-          name: "Mandrem",
-          coords: [15.8197, 73.6449],
-          basePrice: 31624,
-          minPrice: 28000,
-          maxPrice: 34000,
-          listings: 45,
-          type: "Beachfront",
-        },
-        {
-          name: "Mandrem",
-          coords: [15.8197, 73.6449],
-          basePrice: 28529,
-          minPrice: 25000,
-          maxPrice: 30000,
-          listings: 60,
-          type: "Beachfront",
-        },
-        {
-          name: "Raia",
-          coords: [15.3186, 73.9955],
-          basePrice: 23463,
-          minPrice: 20000,
-          maxPrice: 25000,
-          listings: 40,
-          type: "Rural",
-        },
+        { name: "Mandrem", coords: [15.8197, 73.6449], basePrice: 31377, listings: 50 },
+        { name: "Mandrem", coords: [15.8197, 73.6449], basePrice: 31624, listings: 45 },
+        { name: "Mandrem", coords: [15.8197, 73.6449], basePrice: 28529, listings: 60 },
+        { name: "Raia", coords: [15.3186, 73.9955], basePrice: 23463, listings: 40 },
       ];
 
       let markers = {};
       let heatLayer;
-      let itinerary = [];
 
-      function updateMarkers() {
-        for (let key in markers) {
-          map.removeLayer(markers[key]);
-        }
-        markers = {};
+      // Initialize Markers
+      function initMarkers() {
         neighborhoods.forEach((n) => {
           markers[n.name] = L.marker(n.coords, { icon: customIcon })
             .addTo(map)
             .bindPopup(
-              `<b>${n.name}</b><br>Avg Price: ₹${n.basePrice}/5 nights<br>Range: ₹${n.minPrice} - ₹${n.maxPrice}<br>Type: ${n.type}<br><button onclick="addToItinerary('${n.name}')">Add to Itinerary</button>`
+              `<b>${n.name}</b><br>Price: ₹${n.basePrice}/5 nights<br>Listings: ${n.listings}`
             )
             .bindTooltip(n.name, { permanent: false, direction: "top" })
             .on("click", () => map.setView(n.coords, 10));
         });
       }
 
-      function updateHeatmap() {
-        if (heatLayer) map.removeLayer(heatLayer);
-        heatPoints = neighborhoods.map((n) => [
+      // Initialize Heatmap
+      function initHeatmap() {
+        const heatPoints = neighborhoods.map((n) => [
           n.coords[0],
           n.coords[1],
-          (n.maxPrice + n.minPrice) / 2000,
+          n.basePrice / 1000,
         ]);
         heatLayer = L.heatLayer(heatPoints, {
           radius: 25,
           blur: 15,
-          gradient: {
-            0.2: "#ffeb3b",
-            0.5: "#ff9800",
-            0.8: "#f44336",
-            1: "#d32f2f",
-          },
+          gradient: { 0.4: "#ffccd5", 0.65: "#ff8c9e", 1: "#ff385c" },
         }).addTo(map);
       }
 
-      function updatePriceTrends() {
-        neighborhoods.forEach((n) => {
-          const fluctuation = (Math.random() - 0.5) * 0.1;
-          n.trend = Math.max(-0.2, Math.min(0.2, (n.trend || 0) + fluctuation));
-          n.currentPrice = Math.round(n.basePrice * (1 + n.trend));
-          if (markers[n.name]) {
-            markers[n.name].setPopupContent(
-              `<b>${n.name}</b><br>Avg Price: ₹${n.currentPrice}/5 nights<br>Range: ₹${n.minPrice} - ₹${n.maxPrice}<br>Type: ${n.type}<br><button onclick="addToItinerary('${n.name}')">Add to Itinerary</button>`
-            );
-          }
-        });
-        if (heatLayer) updateHeatmap();
-      }
-
-      let trendVisible = false;
-      document.getElementById("toggle-trend").addEventListener("click", () => {
-        trendVisible = !trendVisible;
-        if (trendVisible) {
-          updateHeatmap();
-          updatePriceTrends();
-          setInterval(updatePriceTrends, 5000);
+      // Toggle Heatmap
+      let heatmapVisible = false;
+      document.getElementById("toggle-heatmap").addEventListener("click", () => {
+        heatmapVisible = !heatmapVisible;
+        if (heatmapVisible) {
+          if (!heatLayer) initHeatmap();
+          map.addLayer(heatLayer);
         } else {
-          map.removeLayer(heatLayer);
+          if (heatLayer) map.removeLayer(heatLayer);
         }
       });
 
-      let priceFilter = null;
-      document.getElementById("filter-price").addEventListener("click", () => {
-        const min = prompt("Enter minimum price (₹):");
-        const max = prompt("Enter maximum price (₹):");
-        if (min && max && !isNaN(min) && !isNaN(max)) {
-          priceFilter = { min: parseInt(min), max: parseInt(max) };
-          filterMap();
-        }
-      });
-
-      let typeFilter = null;
-      document.getElementById("filter-type").addEventListener("click", () => {
-        const types = ["Beachfront", "Rural", "Luxury"];
-        const selected = prompt(
-          "Enter experience type (Beachfront, Rural, Luxury):"
-        );
-        if (types.includes(selected)) {
-          typeFilter = selected;
-          filterMap();
-        }
-      });
-
-      function filterMap() {
-        let filtered = neighborhoods;
-        if (priceFilter) {
-          filtered = filtered.filter(
-            (n) =>
-              n.minPrice >= priceFilter.min && n.maxPrice <= priceFilter.max
-          );
-        }
-        if (typeFilter) {
-          filtered = filtered.filter((n) => n.type === typeFilter);
-        }
-        neighborhoods.forEach((n) => {
-          if (markers[n.name]) {
-            const shouldShow = filtered.some((f) => f.name === n.name);
-            map.removeLayer(markers[n.name]);
-            if (shouldShow) markers[n.name].addTo(map);
-          }
-        });
-        if (trendVisible) updateHeatmap();
-      }
-
-      function addToItinerary(name) {
-        if (!itinerary.includes(name)) {
-          itinerary.push(name);
-          const n = neighborhoods.find((n) => n.name === name);
-          document.getElementById("itinerary-list").innerHTML += `
-            <div class="itinerary-item">
-              <span>${name} - ₹${n.basePrice}/5 nights</span>
-              <button onclick="removeFromItinerary('${name}')">Remove</button>
-            </div>
-          `;
-        }
-      }
-
-      function removeFromItinerary(name) {
-        itinerary = itinerary.filter((item) => item !== name);
-        document.getElementById("itinerary-list").innerHTML = "";
-        itinerary.forEach((item) => {
-          const n = neighborhoods.find((n) => n.name === item);
-          document.getElementById("itinerary-list").innerHTML += `
-            <div class="itinerary-item">
-              <span>${item} - ₹${n.basePrice}/5 nights</span>
-              <button onclick="removeFromItinerary('${item}')">Remove</button>
-            </div>
-          `;
-        });
-      }
-
-      // Initialize
-      updateMarkers();
+      // Show map button interaction
       document.querySelectorAll(".show-map").forEach((button, index) => {
         button.addEventListener("click", () => {
-          map.setView(neighborhoods[index].coords, 10);
-          if (!trendVisible) {
-            updateHeatmap();
-            trendVisible = true;
-            updatePriceTrends();
-            setInterval(updatePriceTrends, 5000);
+          const coords = neighborhoods[index].coords;
+          map.setView(coords, 10);
+          if (!heatmapVisible) {
+            if (!heatLayer) initHeatmap();
+            map.addLayer(heatLayer);
+            heatmapVisible = true;
           }
         });
       });
+
+      // Initialize map components
+      initMarkers();
     </script>
   </body>
 </html>
